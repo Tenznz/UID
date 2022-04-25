@@ -2,7 +2,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from ..models import Book, Cart
+from ..models import Book, Cart, CartItem
 from ..serializers import CartSerializer, CartItemSerializer
 from ..utils import verify_token
 
@@ -64,3 +64,24 @@ class CartAPI(APIView):
             return Response({
                 "message": str(e)
             })
+
+    @verify_token
+    def get(self, request):
+        user_carts = CartItem.objects.filter(user_id=request.data.get('user_id')) \
+            .select_related('cart_id') \
+            .select_related('book_id')
+        cart_list = list()
+        total_price=0
+        for cart in user_carts:
+            cart_list.append({
+                "book_name": cart.book_id.book_name,
+                'price': cart.book_id.price,
+                'quantity': cart.quantity
+            })
+            total_price=cart.cart_id.total_price
+        return Response({
+            'message': 'successfully',
+            'user_id': request.data.get('user_id'),
+            'cart_list': cart_list,
+            'total_price':total_price
+        })

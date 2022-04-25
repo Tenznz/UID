@@ -23,9 +23,8 @@ class UserSignUp(APIView):
         serializer = UserSerializer(data=request.data)
         try:
             serializer.is_valid(raise_exception=True)
-            Email().send_email(serializer.data)
-            serializer.create(request.data)
-            print(serializer.data.get('email'))
+            user = serializer.create(request.data)
+            Email().send_email(user)
             return Response({
                 "message": "User add successfully !!",
                 "data": serializer.data

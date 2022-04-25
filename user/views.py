@@ -4,6 +4,8 @@ from django.contrib import auth
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from .email import Email
 from .models import User
 
 from .serializers import UserSerializer
@@ -16,7 +18,9 @@ class UserSignUp(APIView):
         try:
             serializer = UserSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
+            Email().send_email(serializer.data)
             serializer.create(request.data)
+            print(serializer.data.get('email'))
             return Response({
                 "message": "User add successfully !!",
                 "data": serializer.data
@@ -24,7 +28,7 @@ class UserSignUp(APIView):
         except Exception as e:
             return Response({
                 "error_message": str(e)
-            },400)
+            }, 400)
 
     def get(self, request):
         try:
@@ -42,7 +46,7 @@ class UserSignUp(APIView):
         except Exception as e:
             return Response({
                 "error_message": str(e)
-            },400)
+            }, 400)
 
 
 class UserSignIn(APIView):
@@ -56,6 +60,7 @@ class UserSignIn(APIView):
                 })
             user.last_login = datetime.now()
             user.save()
+
             return Response({
                 "message": "user sign in successfully !!"
             }, 200)

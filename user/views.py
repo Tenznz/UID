@@ -1,7 +1,9 @@
+import logging
 from datetime import datetime
 
 from django.contrib import auth
 from django.core.exceptions import ObjectDoesNotExist
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -9,14 +11,17 @@ from .email import Email
 from .models import User
 
 from .serializers import UserSerializer
+from .utils import JWTToken
+
+logging.basicConfig(filename="views.log", filemode="w")
 
 
 class UserSignUp(APIView):
     """User Registration"""
 
     def post(self, request):
+        serializer = UserSerializer(data=request.data)
         try:
-            serializer = UserSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             Email().send_email(serializer.data)
             serializer.create(request.data)
@@ -25,6 +30,9 @@ class UserSignUp(APIView):
                 "message": "User add successfully !!",
                 "data": serializer.data
             }, 201)
+        except ValidationError:
+            return Response(serializer.errors)
+
         except Exception as e:
             return Response({
                 "error_message": str(e)
@@ -69,3 +77,10 @@ class UserSignIn(APIView):
             return Response({
                 "error_message": str(e)
             })
+
+    def get(self, request, token):
+        serializer = UserSerializer(JWTToken().jwt_decode(token))
+        return Response({
+            "message": "validation successfully",
+            "data": serializer.data
+        }, 200)
